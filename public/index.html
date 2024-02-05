@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #90CAF9, #81D4FA);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-transform: capitalize;
+        }
+
+        .container {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #1565C0;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 10px;
+            text-transform: capitalize;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        #weatherResult {
+            margin-top: 20px;
+        }
+
+        .weather-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            text-transform: capitalize;
+        }
+
+        .weather-details {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weather Report</h1>
+        <input type="text" id="cityInput" placeholder="Enter city name">
+        <button onclick="getWeather()">Get Weather</button>
+        <button onclick="getWeatherByLocation()">Get Weather by Location</button>
+        <div id="weatherResult"></div>
+    </div>
+
+    <script>
+        async function getWeatherByLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+
+                    try {
+                        const response = await fetch(`/getWeather?lat=${latitude}&lon=${longitude}`);
+                        const weatherData = await response.json();
+                        displayWeather(weatherData);
+                    } catch (error) {
+                        console.error('Error fetching weather data:', error.message);
+                        alert('Error fetching weather data. Please try again.');
+                    }
+                }, (error) => {
+                    console.error('Error getting user location:', error.message);
+                    alert('Error getting user location. Please try again or enter a city name manually.');
+                });
+            } else {
+                alert('Geolocation is not supported by your browser. Please enter a city name manually.');
+            }
+        }
+
+        async function getWeather() {
+            const cityInput = document.getElementById('cityInput').value;
+
+            if (!isNaN(cityInput)) {
+                alert('Please enter a valid city name. Numbers are not allowed.');
+                return;
+            }
+
+            if (!/^[a-zA-Z]+(?:[\s-][a-zA-Z]+)*$/.test(cityInput)) {
+                alert('Please enter a valid city name format. Example: Ahmedabad. Do not put any space after writing Ahmedabad otherwise an error will occur.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/getWeather', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `city=${cityInput}`,
+                });
+
+                const weatherData = await response.json();
+                displayWeather(weatherData);
+            } catch (error) {
+                console.error('Error fetching weather data:', error.message);
+                alert('Error fetching weather data. Please try again.');
+            }
+        }
+
+        function displayWeather(data) {
+            const weatherResult = document.getElementById('weatherResult');
+            weatherResult.innerHTML = `
+                <div class="weather-card">
+                    <p class="weather-details">Weather in ${data.name}: ${data.weather[0].description}</p>
+                    <p class="weather-details">Temperature: ${data.main.temp}°C</p>
+                    <p class="weather-details">Humidity: ${data.main.humidity}%</p>
+                    <p class="weather-details">Wind Speed: ${data.wind.speed} m/s</p>
+                    <p class="weather-details">Precipitation: ${data.rain ? data.rain['1h'] || data.snow['1h'] : 'None'}</p>
+                    <p class="weather-details">Barometric Pressure: ${data.main.pressure} hPa</p>
+                    <p class="weather-details">Visibility: ${data.visibility} meters</p>
+                    <p class="weather-details">Sunrise: ${new Date(data.sys.sunrise * 1000).toLocaleTimeString()}</p>
+                    <p class="weather-details">Sunset: ${new Date(data.sys.sunset * 1000).toLocaleTimeString()}</p>
+                    <p class="weather-details">UV Index: ${data.uvi}</p>
+                    <p class="weather-details">Weather Conditions: ${data.weather[0].main}</p>
+                    <p class="weather-details">Weather Alerts and Warnings: ${data.weather[0].description}</p>
+                    <p class="weather-details">Forecast: ${data.weather[0].description}</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
